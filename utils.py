@@ -48,7 +48,7 @@ def generar_slug(texto):
         # Convertir a minúsculas
     slug = texto.lower()
 
-    # Quitar tildes: "canción" -> "cancion"
+    # Quitar tildes: "canción" -> "cancion" Slug muy util
     slug = unicodedata.normalize("NFKD", slug).encode("ascii", "ignore").decode("ascii")
 
     # Reemplazar espacios con guiones
@@ -73,7 +73,7 @@ def obtener_año_actual():
         int: Año actual
     """
     # TODO: pendiente por implementar
-    return ""
+    return datetime.now().year
 
 def validar_año(año):
     """
