@@ -3,6 +3,7 @@ Módulo de utilidades para la aplicación.
 Contiene funciones auxiliares utilizadas en diferentes partes de la aplicación.
 """
 import re
+import unicodedata
 from datetime import datetime
 
 def validar_correo(correo):
@@ -44,16 +45,23 @@ def generar_slug(texto):
     Returns:
         str: Slug generado
     """
-    # TODO: Convertir a minúsculas
-    slug = texto
-    
-    # TODO: Reemplazar espacios con guiones
-    
-    # TODO: Eliminar caracteres no alfanuméricos (excepto guiones)
-    
-    # TODO: Reemplazar múltiples guiones con uno solo
-    
-    # TODO: Eliminar guiones al inicio y final
+        # Convertir a minúsculas
+    slug = texto.lower()
+
+    # Quitar tildes: "canción" -> "cancion"
+    slug = unicodedata.normalize("NFKD", slug).encode("ascii", "ignore").decode("ascii")
+
+    # Reemplazar espacios con guiones
+    slug = re.sub(r"\s+", "-", slug)
+
+    # Eliminar caracteres no alfanuméricos (excepto guiones)
+    slug = re.sub(r"[^a-z0-9-]", "", slug)
+
+    # Reemplazar múltiples guiones con uno solo
+    slug = re.sub(r"-+", "-", slug)
+
+    # Eliminar guiones al inicio y final
+    slug = slug.strip("-")
     
     return slug
 
