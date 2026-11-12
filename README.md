@@ -1,5 +1,12 @@
 # API de Música
 
+## Datos del Estudiante
+
+- **Nombre:** Miguel Angel Fernandez Samboni
+- **Usuario GitHub:** @MiguelAngel0-4
+- **Programa:** Ingeniería de Sistemas
+- **Curso:** Lenguajes de Programación Avanzados 2
+
 Una [API RESTful](https://aws.amazon.com/es/what-is/restful-api/) para gestionar usuarios, canciones y favoritos. Desarrollada con [FastAPI](https://fastapi.tiangolo.com/), [SQLModel](https://sqlmodel.tiangolo.com/) y [Pydantic](https://docs.pydantic.dev/).
 
 ## Descripción
@@ -58,7 +65,7 @@ lpa2-taller3
 1. Clona este repositorio:
 
    ```bash
-   git clone https://github.com/UR-CC/lpa2-taller3.git
+   git clone https://github.com/MiguelAngel0-4/lpa2-taller3.git
    cd lpa2-taller3
    ```
 
