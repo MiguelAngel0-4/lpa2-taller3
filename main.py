@@ -30,7 +30,12 @@ app = FastAPI(
     description="API RESTful para gestionar usuarios, canciones y favoritos",
     version="settings.app_version",
     lifespan=lifespan,
-    # TODO: Agregar información de contacto y licencia
+    contact={
+        "name": "MIGUEL ANGEL FERNANDEZ",
+        "email": "migue2801224@gmail.com",
+        "url": "https://github.com/MiguelAngel0-4/lpa2-taller3",
+    },
+    license_info={"name": "MIT", "url": "https://opensource.org/licenses/MIT"},
 
 )
 
