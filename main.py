@@ -5,8 +5,9 @@ from contextlib import asynccontextmanager
 from musica_api.database import create_db_and_tables, get_session
 from musica_api.routers import canciones, favoritos, usuarios
 
-# TODO: Importar la configuración desde app.config
+from musica_api.config import get_settings
 
+settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -25,9 +26,9 @@ async def lifespan(app: FastAPI):
 # Crear la instancia de FastAPI con metadatos apropiados
 # Incluir: title, description, version, contact, license_info
 app = FastAPI(
-    title="API de Películas",
+    title="settings.app_name",
     description="API RESTful para gestionar usuarios, canciones y favoritos",
-    version="1.0.0",
+    version="settings.app_version",
     lifespan=lifespan,
     # TODO: Agregar información de contacto y licencia
 
@@ -38,7 +39,7 @@ app = FastAPI(
 # Esto es importante para desarrollo con frontend separado
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # En producción, especificar orígenes permitidos
+    allow_origins=["settings.cors_origins"],  # En producción, especificar orígenes permitidos
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
