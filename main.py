@@ -2,8 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from app.database import create_db_and_tables
-from app.routers import usuarios, peliculas, favoritos
+from musica_api.database import create_db_and_tables, get_session
+from musica_api.routers import canciones, favoritos, usuarios
 
 # TODO: Importar la configuración desde app.config
 
@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI):
 # Incluir: title, description, version, contact, license_info
 app = FastAPI(
     title="API de Películas",
-    description="API RESTful para gestionar usuarios, películas y favoritos",
+    description="API RESTful para gestionar usuarios, canciones y favoritos",
     version="1.0.0",
     lifespan=lifespan,
     # TODO: Agregar información de contacto y licencia
