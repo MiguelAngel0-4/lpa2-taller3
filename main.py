@@ -119,9 +119,12 @@ async def health_check(session: Session = Depends(get_session)):
 
 if __name__ == "__main__":
     import uvicorn
-    
+
     uvicorn.run(
-        # TODO: Configurar el servidor uvicorn con los parámetros apropiados
+        "main:app",
+        host=settings.host,
+        port=settings.port,
+        reload=settings.debug,
     )
 
 
