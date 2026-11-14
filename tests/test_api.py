@@ -3,6 +3,8 @@ Tests para la API de Música.
 Pruebas unitarias y de integración usando pytest.
 """
 
+import logging
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
@@ -550,3 +552,172 @@ class TestUtils:
 
         assert validar_año(2000)
         assert not validar_año(obtener_año_actual() + 1)
+
+
+# =============================================================================
+# TESTS DE PAGINACIÓN (Mejora 1)
+# =============================================================================
+
+
+@pytest.fixture(name="quince_canciones")
+def quince_canciones_fixture(session: Session):
+    """Crea 15 canciones para probar la paginación."""
+    canciones = [
+        Cancion(
+            titulo=f"Canción {i:02d}",
+            artista="Artista Paginado",
+            duracion=180,
+            año=2020,
+            genero="Pop",
+        )
+        for i in range(1, 16)
+    ]
+    session.add_all(canciones)
+    session.commit()
+    return canciones
+
+
+class TestPaginacion:
+    """Tests para la paginación con skip y limit."""
+
+    def test_limite_por_defecto(self, client: TestClient, quince_canciones):
+        """Sin parámetros se devuelven 10 registros y el total en el encabezado"""
+        response = client.get("/api/canciones")
+
+        assert response.status_code == 200
+        assert len(response.json()) == 10
+        assert response.headers["X-Total-Count"] == "15"
+
+    def test_skip_y_limit(self, client: TestClient, quince_canciones):
+        """skip=10&limit=10 devuelve la segunda página (5 registros)"""
+        response = client.get("/api/canciones", params={"skip": 10, "limit": 10})
+        titulos = [c["titulo"] for c in response.json()]
+
+        assert len(titulos) == 5
+        assert titulos[0] == "Canción 11"
+        assert titulos[-1] == "Canción 15"
+
+    def test_paginas_no_se_solapan(self, client: TestClient, quince_canciones):
+        """Dos páginas consecutivas no repiten registros"""
+        pagina1 = client.get("/api/canciones", params={"limit": 5}).json()
+        pagina2 = client.get("/api/canciones", params={"skip": 5, "limit": 5}).json()
+
+        ids1 = {c["id"] for c in pagina1}
+        ids2 = {c["id"] for c in pagina2}
+        assert ids1.isdisjoint(ids2)
+
+    def test_skip_mayor_al_total(self, client: TestClient, quince_canciones):
+        """Si skip supera el total se devuelve una lista vacía, no un error"""
+        response = client.get("/api/canciones", params={"skip": 100})
+
+        assert response.status_code == 200
+        assert response.json() == []
+        assert response.headers["X-Total-Count"] == "15"
+
+    @pytest.mark.parametrize(
+        "params", [{"limit": 0}, {"limit": 101}, {"skip": -1}, {"limit": "abc"}]
+    )
+    def test_parametros_invalidos(self, client: TestClient, params: dict):
+        """limit debe estar entre 1 y 100, y skip no puede ser negativo"""
+        response = client.get("/api/canciones", params=params)
+
+        assert response.status_code == 422
+
+    def test_paginacion_en_busqueda(self, client: TestClient, quince_canciones):
+        """La búsqueda también se pagina y reporta el total de coincidencias"""
+        response = client.get(
+            "/api/canciones/buscar",
+            params={"artista": "paginado", "limit": 3},
+        )
+
+        assert len(response.json()) == 3
+        assert response.headers["X-Total-Count"] == "15"
+
+    def test_paginacion_usuarios_y_favoritos(
+        self, client: TestClient, usuario_test: Usuario
+    ):
+        """Usuarios y favoritos también exponen X-Total-Count"""
+        usuarios = client.get("/api/usuarios", params={"limit": 1})
+        favoritos = client.get(f"/api/usuarios/{usuario_test.id}/favoritos")
+
+        assert usuarios.headers["X-Total-Count"] == "1"
+        assert favoritos.headers["X-Total-Count"] == "0"
+
+
+# =============================================================================
+# TESTS DE LOGGING (Mejora 2)
+# =============================================================================
+
+
+class TestLogging:
+    """Tests para el registro de peticiones y errores."""
+
+    def test_peticion_queda_registrada(
+        self, client: TestClient, caplog: pytest.LogCaptureFixture
+    ):
+        """El middleware registra método, ruta y código de estado"""
+        with caplog.at_level(logging.INFO, logger="musica_api"):
+            client.get("/api/canciones")
+
+        assert "GET /api/canciones -> 200" in caplog.text
+
+    def test_encabezado_tiempo_de_proceso(self, client: TestClient):
+        """Cada respuesta incluye el tiempo de proceso"""
+        response = client.get("/health")
+
+        assert response.headers["X-Process-Time"].endswith("ms")
+
+    def test_404_se_registra_como_warning(
+        self, client: TestClient, caplog: pytest.LogCaptureFixture
+    ):
+        """Los errores del cliente (4xx) se registran con nivel WARNING"""
+        with caplog.at_level(logging.INFO, logger="musica_api"):
+            client.get("/api/usuarios/9999")
+
+        registros = [r for r in caplog.records if "/api/usuarios/9999" in r.message]
+        assert registros
+        assert registros[0].levelno == logging.WARNING
+
+    def test_creacion_queda_registrada(
+        self, client: TestClient, caplog: pytest.LogCaptureFixture
+    ):
+        """Los routers registran las operaciones importantes"""
+        with caplog.at_level(logging.INFO, logger="musica_api"):
+            client.post(
+                "/api/usuarios",
+                json={"nombre": "Log Test", "correo": "log@mail.com"},
+            )
+
+        assert "Usuario creado" in caplog.text
+        assert "log@mail.com" not in caplog.text  # no se registran datos personales
+
+    def test_validacion_fallida_se_registra(
+        self, client: TestClient, caplog: pytest.LogCaptureFixture
+    ):
+        """Los errores 422 registran qué campos fallaron"""
+        with caplog.at_level(logging.WARNING, logger="musica_api"):
+            client.post("/api/usuarios", json={"nombre": "X"})
+
+        assert "Validación fallida" in caplog.text
+        assert "correo" in caplog.text
+
+    def test_error_inesperado_devuelve_500(
+        self, session: Session, caplog: pytest.LogCaptureFixture
+    ):
+        """Un error no controlado se registra y responde 500 sin detalles internos"""
+
+        def sesion_rota():
+            raise RuntimeError("fallo simulado de la base de datos")
+
+        app.dependency_overrides[get_session] = sesion_rota
+        try:
+            client = TestClient(app, raise_server_exceptions=False)
+            with caplog.at_level(logging.ERROR, logger="musica_api"):
+                response = client.get("/api/usuarios")
+        finally:
+            app.dependency_overrides.clear()
+
+        assert response.status_code == 500
+        assert response.json() == {"detail": "Error interno del servidor"}
+        assert "fallo simulado" not in response.text
+        assert "fallo simulado" in caplog.text
