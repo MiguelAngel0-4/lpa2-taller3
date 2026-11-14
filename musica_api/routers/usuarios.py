@@ -24,7 +24,9 @@ def obtener_usuario_o_404(id_usuario: int, session: Session) -> Usuario:
     return usuario
 
 
-def verificar_correo_unico(correo: str, session: Session, excluir_id: int | None = None):
+def verificar_correo_unico(
+    correo: str, session: Session, excluir_id: int | None = None
+):
     existente = session.exec(select(Usuario).where(Usuario.correo == correo)).first()
     if existente and existente.id != excluir_id:
         raise HTTPException(status.HTTP_409_CONFLICT, "El correo ya está registrado")
@@ -75,6 +77,7 @@ def eliminar_usuario(id: int, session: Session = Depends(get_session)):
 # ---------------------------------------------------------------------------
 # Favoritos de un usuario
 # ---------------------------------------------------------------------------
+
 
 @router.get("/{id}/favoritos", response_model=list[FavoritoRead])
 def listar_favoritos_usuario(id: int, session: Session = Depends(get_session)):

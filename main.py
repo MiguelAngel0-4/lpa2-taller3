@@ -1,6 +1,5 @@
 import platform
 import time
-from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
@@ -8,13 +7,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlmodel import Session
 
+from musica_api.config import get_settings
 from musica_api.database import create_db_and_tables, get_session
 from musica_api.routers import canciones, favoritos, usuarios
-from musica_api.config import get_settings
 
 settings = get_settings()
 # Para que al momento en que arrana la aplicación (se calcule el uptime)
 HORA_INICIO = time.time()
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -25,7 +25,7 @@ async def lifespan(app: FastAPI):
     # Startup: Crear tablas en la base de datos
     create_db_and_tables()
     yield
-    
+
     # Shutdown: Limpiar recursos si es necesario
     print("cerrando aplicación...")
 
@@ -33,9 +33,9 @@ async def lifespan(app: FastAPI):
 # Crear la instancia de FastAPI con metadatos apropiados
 # Incluir: title, description, version, contact, license_info
 app = FastAPI(
-    title="settings.app_name",
+    title=settings.app_name,
     description="API RESTful para gestionar usuarios, canciones y favoritos",
-    version="settings.app_version",
+    version=settings.app_version,
     lifespan=lifespan,
     contact={
         "name": "MIGUEL ANGEL FERNANDEZ",
@@ -43,7 +43,6 @@ app = FastAPI(
         "url": "https://github.com/MiguelAngel0-4/lpa2-taller3",
     },
     license_info={"name": "MIT", "url": "https://opensource.org/licenses/MIT"},
-
 )
 
 
@@ -51,7 +50,8 @@ app = FastAPI(
 # Esto es importante para desarrollo con frontend separado
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["settings.cors_origins"],  # En producción, especificar orígenes permitidos
+    # En producción, especificar orígenes permitidos en CORS_ORIGINS del .env
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -79,9 +79,9 @@ async def root():
         "entorno": settings.environment,
         "documentacion": {"swagger": "/docs", "redoc": "/redoc"},
         "endpoints": {
-                "usuarios": "/api/usuarios",
-                "canciones": "/api/canciones",
-                "favoritos": "/api/favoritos",
+            "usuarios": "/api/usuarios",
+            "canciones": "/api/canciones",
+            "favoritos": "/api/favoritos",
         },
     }
 
@@ -126,5 +126,3 @@ if __name__ == "__main__":
         port=settings.port,
         reload=settings.debug,
     )
-
-

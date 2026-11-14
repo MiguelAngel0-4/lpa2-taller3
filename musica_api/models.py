@@ -10,7 +10,6 @@ Para cada entidad se usa el patrón:
 """
 
 from datetime import datetime, timezone
-from typing import Optional
 
 from pydantic import field_validator
 from sqlalchemy import UniqueConstraint
@@ -28,13 +27,14 @@ def ahora_utc() -> datetime:
 # USUARIO
 # =============================================================================
 
+
 class UsuarioBase(SQLModel):
     nombre: str = Field(min_length=2, max_length=100)
     correo: str = Field(max_length=150, index=True, unique=True)
 
 
 class Usuario(UsuarioBase, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     fecha_registro: datetime = Field(default_factory=ahora_utc)
 
     favoritos: list["Favorito"] = Relationship(
@@ -58,12 +58,12 @@ class UsuarioRead(UsuarioBase):
 
 
 class UsuarioUpdate(SQLModel):
-    nombre: Optional[str] = Field(default=None, min_length=2, max_length=100)
-    correo: Optional[str] = Field(default=None, max_length=150)
+    nombre: str | None = Field(default=None, min_length=2, max_length=100)
+    correo: str | None = Field(default=None, max_length=150)
 
     @field_validator("correo")
     @classmethod
-    def validar_formato_correo(cls, v: Optional[str]) -> Optional[str]:
+    def validar_formato_correo(cls, v: str | None) -> str | None:
         if v is not None and not validar_correo(v):
             raise ValueError("El correo electrónico no tiene un formato válido")
         return v.lower() if v else v
@@ -73,17 +73,18 @@ class UsuarioUpdate(SQLModel):
 # CANCIÓN
 # =============================================================================
 
+
 class CancionBase(SQLModel):
     titulo: str = Field(min_length=1, max_length=200, index=True)
     artista: str = Field(min_length=1, max_length=150, index=True)
-    album: Optional[str] = Field(default=None, max_length=200)
+    album: str | None = Field(default=None, max_length=200)
     duracion: int = Field(gt=0, description="Duración en segundos")
     año: int
     genero: str = Field(min_length=1, max_length=50, index=True)
 
 
 class Cancion(CancionBase, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     fecha_creacion: datetime = Field(default_factory=ahora_utc)
 
     favoritos: list["Favorito"] = Relationship(
@@ -107,16 +108,16 @@ class CancionRead(CancionBase):
 
 
 class CancionUpdate(SQLModel):
-    titulo: Optional[str] = Field(default=None, min_length=1, max_length=200)
-    artista: Optional[str] = Field(default=None, min_length=1, max_length=150)
-    album: Optional[str] = Field(default=None, max_length=200)
-    duracion: Optional[int] = Field(default=None, gt=0)
-    año: Optional[int] = None
-    genero: Optional[str] = Field(default=None, min_length=1, max_length=50)
+    titulo: str | None = Field(default=None, min_length=1, max_length=200)
+    artista: str | None = Field(default=None, min_length=1, max_length=150)
+    album: str | None = Field(default=None, max_length=200)
+    duracion: int | None = Field(default=None, gt=0)
+    año: int | None = None
+    genero: str | None = Field(default=None, min_length=1, max_length=50)
 
     @field_validator("año")
     @classmethod
-    def validar_año_lanzamiento(cls, v: Optional[int]) -> Optional[int]:
+    def validar_año_lanzamiento(cls, v: int | None) -> int | None:
         if v is not None and not validar_año(v):
             raise ValueError("El año debe estar entre 1900 y el año actual")
         return v
@@ -125,6 +126,7 @@ class CancionUpdate(SQLModel):
 # =============================================================================
 # FAVORITO
 # =============================================================================
+
 
 class FavoritoBase(SQLModel):
     id_usuario: int = Field(foreign_key="usuario.id")
@@ -135,11 +137,11 @@ class Favorito(FavoritoBase, table=True):
     # Un usuario no puede marcar la misma canción dos veces
     __table_args__ = (UniqueConstraint("id_usuario", "id_cancion"),)
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     fecha_marcado: datetime = Field(default_factory=ahora_utc)
 
-    usuario: Optional[Usuario] = Relationship(back_populates="favoritos")
-    cancion: Optional[Cancion] = Relationship(back_populates="favoritos")
+    usuario: Usuario | None = Relationship(back_populates="favoritos")
+    cancion: Cancion | None = Relationship(back_populates="favoritos")
 
 
 class FavoritoCreate(FavoritoBase):

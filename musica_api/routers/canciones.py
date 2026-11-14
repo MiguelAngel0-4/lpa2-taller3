@@ -1,7 +1,5 @@
 """Endpoints para la gestión de canciones."""
 
-from typing import Optional
-
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session, col, select
 
@@ -36,9 +34,9 @@ def crear_cancion(datos: CancionCreate, session: Session = Depends(get_session))
 # Si no, FastAPI intentaría interpretar "buscar" como un id numérico (error 422).
 @router.get("/buscar", response_model=list[CancionRead])
 def buscar_canciones(
-    titulo: Optional[str] = Query(default=None),
-    artista: Optional[str] = Query(default=None),
-    genero: Optional[str] = Query(default=None),
+    titulo: str | None = Query(default=None),
+    artista: str | None = Query(default=None),
+    genero: str | None = Query(default=None),
     session: Session = Depends(get_session),
 ):
     consulta = select(Cancion)
