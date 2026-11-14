@@ -1,6 +1,8 @@
 """Endpoints para la gestión de usuarios y sus favoritos."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlmodel import Session, select
 
 from musica_api.database import get_session
@@ -13,8 +15,10 @@ from musica_api.models import (
     UsuarioRead,
     UsuarioUpdate,
 )
+from musica_api.pagination import Paginacion, paginar, parametros_paginacion
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 def obtener_usuario_o_404(id_usuario: int, session: Session) -> Usuario:
@@ -29,12 +33,19 @@ def verificar_correo_unico(
 ):
     existente = session.exec(select(Usuario).where(Usuario.correo == correo)).first()
     if existente and existente.id != excluir_id:
+        # No se registra el correo: es un dato personal
+        logger.warning("Intento de registrar un correo duplicado")
         raise HTTPException(status.HTTP_409_CONFLICT, "El correo ya está registrado")
 
 
 @router.get("", response_model=list[UsuarioRead])
-def listar_usuarios(session: Session = Depends(get_session)):
-    return session.exec(select(Usuario)).all()
+def listar_usuarios(
+    response: Response,
+    paginacion: Paginacion = Depends(parametros_paginacion),
+    session: Session = Depends(get_session),
+):
+    consulta = select(Usuario).order_by(Usuario.id)
+    return paginar(session, consulta, paginacion, response)
 
 
 @router.post("", response_model=UsuarioRead, status_code=status.HTTP_201_CREATED)
@@ -44,6 +55,7 @@ def crear_usuario(datos: UsuarioCreate, session: Session = Depends(get_session))
     session.add(usuario)
     session.commit()
     session.refresh(usuario)
+    logger.info("Usuario creado: id=%s", usuario.id)
     return usuario
 
 
@@ -64,6 +76,7 @@ def actualizar_usuario(
     session.add(usuario)
     session.commit()
     session.refresh(usuario)
+    logger.info("Usuario actualizado: id=%s, campos=%s", id, list(cambios))
     return usuario
 
 
@@ -72,6 +85,7 @@ def eliminar_usuario(id: int, session: Session = Depends(get_session)):
     usuario = obtener_usuario_o_404(id, session)
     session.delete(usuario)
     session.commit()
+    logger.info("Usuario eliminado: id=%s (y sus favoritos)", id)
 
 
 # ---------------------------------------------------------------------------
@@ -80,9 +94,15 @@ def eliminar_usuario(id: int, session: Session = Depends(get_session)):
 
 
 @router.get("/{id}/favoritos", response_model=list[FavoritoRead])
-def listar_favoritos_usuario(id: int, session: Session = Depends(get_session)):
+def listar_favoritos_usuario(
+    id: int,
+    response: Response,
+    paginacion: Paginacion = Depends(parametros_paginacion),
+    session: Session = Depends(get_session),
+):
     obtener_usuario_o_404(id, session)
-    return session.exec(select(Favorito).where(Favorito.id_usuario == id)).all()
+    consulta = select(Favorito).where(Favorito.id_usuario == id).order_by(Favorito.id)
+    return paginar(session, consulta, paginacion, response)
 
 
 @router.post(
@@ -109,6 +129,7 @@ def marcar_favorito(
     session.add(favorito)
     session.commit()
     session.refresh(favorito)
+    logger.info("Favorito marcado: usuario=%s, cancion=%s", id_usuario, id_cancion)
     return favorito
 
 
@@ -127,3 +148,4 @@ def eliminar_favorito_usuario(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Favorito no encontrado")
     session.delete(favorito)
     session.commit()
+    logger.info("Favorito eliminado: usuario=%s, cancion=%s", id_usuario, id_cancion)

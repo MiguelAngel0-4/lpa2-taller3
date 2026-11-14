@@ -7,6 +7,8 @@ from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+NivelLog = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+
 
 class Settings(BaseSettings):
     """
@@ -40,8 +42,13 @@ class Settings(BaseSettings):
     # algorithm: str = "HS256"
     # access_token_expire_minutes: int = 30
 
-    # TODO: Configuración de logging
-    # log_level: str = "INFO"
+    # Configuración de logging
+    log_level: NivelLog = "INFO"
+    log_file: str = "logs/api.log"  # cadena vacía = solo consola
+
+    # Configuración de paginación
+    default_page_size: int = 10
+    max_page_size: int = 100
 
     # Configuración de Pydantic Settings (sintaxis de Pydantic v2)
     model_config = SettingsConfigDict(
@@ -61,7 +68,7 @@ class DevelopmentSettings(Settings):
     """Configuración para el entorno de desarrollo."""
 
     debug: bool = True
-    # TODO: Agregar configuraciones específicas de desarrollo
+    log_level: NivelLog = "DEBUG"
 
 
 class TestingSettings(Settings):
@@ -69,14 +76,14 @@ class TestingSettings(Settings):
 
     # Usar una base de datos diferente para pruebas
     database_url: str = "sqlite:///./test_musica.db"
-    # TODO: Agregar configuraciones específicas de pruebas
+    log_file: str = ""  # en pruebas no se escribe archivo de log
 
 
 class ProductionSettings(Settings):
     """Configuración para el entorno de producción."""
 
     debug: bool = False
-    # TODO: Agregar configuraciones específicas de producción
+    log_level: NivelLog = "WARNING"
     # TODO: Cambiar a una base de datos más robusta (PostgreSQL, MySQL)
     # database_url: str = "postgresql://user:password@localhost/musica_prod"
 
