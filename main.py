@@ -101,6 +101,13 @@ async def health_check(session: Session = Depends(get_session)):
     return {
         # TODO: Agregar verificación de conexión a base de datos
         # TODO: Agregar información sobre el sistema (uptime, memoria, etc.)
+        "status": "healthy" if estado_db == "conectada" else "unhealthy",
+        "base_de_datos": estado_db,
+        "sistema": {
+            "uptime_segundos": round(time.time() - HORA_INICIO, 2),
+            "python": platform.python_version(),
+            "sistema_operativo": platform.system(),
+        },
     }
 
 
