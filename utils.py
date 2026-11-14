@@ -32,7 +32,6 @@ def formatear_duracion(segundos):
     """
     minutos, segs = divmod(int(segundos), 60)
     return f"{minutos:02d}:{segs:02d}"
-    pass 
 
 def generar_slug(texto):
     """
@@ -45,7 +44,7 @@ def generar_slug(texto):
     Returns:
         str: Slug generado
     """
-        # Convertir a minúsculas
+    # Convertir a minúsculas
     slug = texto.lower()
 
     # Quitar tildes: "canción" -> "cancion" Slug muy util
