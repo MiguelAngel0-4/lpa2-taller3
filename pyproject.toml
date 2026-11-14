@@ -2,3 +2,18 @@
 # Permite que los tests importen main.py, utils.py y musica_api desde la raíz
 pythonpath = ["."]
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+exclude = ["venv", ".venv"]
+
+[tool.ruff.lint]
+# E/W: estilo PEP 8 | F: errores (Pyflakes) | I: orden de imports
+# UP: sintaxis moderna de Python | B: posibles bugs (flake8-bugbear)
+select = ["E", "W", "F", "I", "UP", "B"]
+# B008: FastAPI usa Depends()/Query() como valor por defecto a propósito
+ignore = ["B008"]
+
+[tool.ruff.format]
+quote-style = "double"

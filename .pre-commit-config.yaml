@@ -1,0 +1,30 @@
+# Hooks que se ejecutan automáticamente antes de cada `git commit`
+# Instalar:  pre-commit install
+# Ejecutar manualmente sobre todo el proyecto:  pre-commit run --all-files
+repos:
+  # Archivos limpios: espacios al final, salto de línea final, YAML válido
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+
+  # Ruff: linter + formatter
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.9
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+
+  # Pytest: usa el pytest del entorno virtual activo
+  - repo: local
+    hooks:
+      - id: pytest
+        name: pytest
+        entry: pytest
+        language: system
+        pass_filenames: false
+        always_run: true

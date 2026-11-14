@@ -16,4 +16,9 @@ python-dotenv
 pytest
 pytest-asyncio
 httpx
+httpx2
 email-validator
+
+# Calidad de código
+ruff
+pre-commit
