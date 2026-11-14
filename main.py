@@ -1,13 +1,20 @@
-from fastapi import FastAPI
+import platform
+import time
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
+from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
+from sqlmodel import Session
+
 from musica_api.database import create_db_and_tables, get_session
 from musica_api.routers import canciones, favoritos, usuarios
-
 from musica_api.config import get_settings
 
 settings = get_settings()
+# Para que al momento en que arrana la aplicación (se calcule el uptime)
+HORA_INICIO = time.time()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -81,13 +88,17 @@ async def root():
 
 # Crear un endpoint de health check para monitoreo
 @app.get("/health", tags=["Health"])
-async def health_check():
+async def health_check(session: Session = Depends(get_session)):
     """
     Health check endpoint para verificar el estado de la API.
     Útil para sistemas de monitoreo y orquestación.
     """
+    try:
+        session.exec(text("SELECT 1"))
+        estado_db = "conectada"
+    except Exception as error:
+        estado_db = f"error: {error}"
     return {
-        "status": "healthy",
         # TODO: Agregar verificación de conexión a base de datos
         # TODO: Agregar información sobre el sistema (uptime, memoria, etc.)
     }
