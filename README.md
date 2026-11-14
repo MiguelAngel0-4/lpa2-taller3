@@ -159,3 +159,20 @@ lpa2-taller3
 7. **Estadísticas de uso**: Implementar un sistema de seguimiento para analizar qué canciones son más populares y sugerir recomendaciones basadas en preferencias similares.
 
 8. **Subida de archivos**: Permitir la subida de archivos de audio y gestionar su almacenamiento en un servicio como S3 o similar.
+
+## Mejoras Implementadas
+
+### 1. Paginación
+Todos los listados aceptan `skip` (registros a omitir, por defecto 0) y `limit`
+(registros por página, por defecto 10, máximo 100). El total de registros se
+devuelve en el encabezado `X-Total-Count`.
+
+    GET /api/canciones?skip=10&limit=5
+
+### 2. Registro (logging)
+- Cada petición se registra con método, ruta, código de estado y duración
+  (también disponible en el encabezado `X-Process-Time`).
+- Los logs se escriben en consola y en `logs/api.log` (rotación cada 1 MB).
+- Los errores de validación (422) registran los campos que fallaron.
+- Los errores inesperados se registran con su traza y responden un 500 genérico.
+- El nivel se configura con `LOG_LEVEL` en el `.env`.
